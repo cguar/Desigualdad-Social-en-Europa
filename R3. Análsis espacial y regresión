@@ -1,0 +1,115 @@
+# creo mapa de europa vacío
+library(eurostat);library(sf)
+mapa_EURO <- get_eurostat_geospatial(resolution = 10, 
+                                 nuts_level = 0, 
+                                 year = 2016)
+
+# combino mapa_EURO con mi database merged_geodata para hacer un mapa de mi variable objetivo: Coeficiente del Gini
+library(dplyr); library(ggplot2); library(sf); library(scales); library(ggthemes)
+df_shp <- merged_geodata %>% 
+  select("geo", gini19, proteccion19,educacion19,precariedad19, poblacion19) %>% 
+  inner_join(mapa_EURO, by = "geo") %>% 
+  st_as_sf()
+
+# mapa gini
+df_shp %>% 
+  ggplot(aes(fill = gini19)) +
+  geom_sf(size = 0.1, 
+          color = "#F3F3F3") +
+  scale_fill_gradient_tableau(name = "%", palette = "Red") +
+  scale_x_continuous(limits = c(-10, 50)) +
+  scale_y_continuous(limits = c(35, 70)) +
+  theme_void() +
+  labs(title = "Coeficiente de Gini",
+       caption="Elaboración propia a partir de datos del portal Eurostat")+
+  theme(legend.text = element_text(size = 12),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+        plot.caption = element_text(size = 12, hjust = 1),
+        plot.title.position = "panel")
+# mapa proteccion social
+df_shp %>% 
+  ggplot(aes(fill = proteccion19)) +
+  geom_sf(size = 0.1, 
+          color = "#F3F3F3") +
+  scale_fill_gradient_tableau(name = "€", palette = "Blue") +
+  scale_x_continuous(limits = c(-10, 50)) +
+  scale_y_continuous(limits = c(35, 70)) +
+  theme_void() +
+  labs(title = "Gasto en Protección social",
+       caption="Elaboración propia a partir de datos del portal Eurostat")+
+  theme(legend.text = element_text(size = 12),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+        plot.caption = element_text(size = 12, hjust = 1))
+# mapa educacion
+df_shp %>% 
+  ggplot(aes(fill = educacion19)) +
+  geom_sf(size = 0.1, 
+          color = "#F3F3F3") +
+  scale_fill_gradient_tableau(name = "%", palette = "Green") +
+  scale_x_continuous(limits = c(-10, 50)) +
+  scale_y_continuous(limits = c(35, 70)) +
+  theme_void() +
+  labs(title = "Alcance del Nivel educativo (5-8)",
+       caption="Elaboración propia a partir de datos del portal Eurostat")+
+  theme(legend.text = element_text(size = 12),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+        plot.caption = element_text(size = 12, hjust = 1))
+# mapa precariedad laboral
+df_shp %>% 
+  ggplot(aes(fill = precariedad19)) +
+  geom_sf(size = 0.1, 
+          color = "#F3F3F3") +
+  scale_fill_gradient_tableau(name = "%", palette = "Orange-Gold") +
+  scale_x_continuous(limits = c(-10, 50)) +
+  scale_y_continuous(limits = c(35, 70)) +
+  theme_void() +
+  labs(title = "Precariedad Laboral",
+       caption="Elaboración propia a partir de datos del portal Eurostat")+
+  theme(legend.text = element_text(size = 12),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+        plot.caption = element_text(size = 12, hjust = 1))
+
+# Análisis de la vecindad ----
+merged_coord <- merged_geodata %>% 
+  inner_join(mapa_EURO, by = "geo") %>% 
+  st_as_sf()
+
+#crear mapa de vecinos
+(wr <- spdep::poly2nb(merged_coord, queen = FALSE))
+xy <- st_centroid(merged_coord$geometry)
+plot(merged_coord$geometry, border="grey40")
+plot(wr, xy, col="springgreen4", add=TRUE)
+
+#Índice de Moran, Scatterplot y LISA
+library(spdep)
+ww <- nb2listw(wr, style="B")
+moran(merged_coord$gini19, ww, n=length(ww$neighbours), S0=Szero(ww))
+moran.test(merged_coord$gini19, listw=ww) 
+
+moran.plot(merged_coord$gini19, listw=nb2listw(wr, style="B"), col="blue", 
+           ylab="Valores retardados",
+           xlab="Coeficiente de Gini")
+localmoran(merged_coord$gini19, listw = ww)
+
+LISA <- function(x) {
+  P = localmoran(merged_coord$gini19, listw = ww)
+  dif = merged_coord$gini19 - mean(merged_coord$gini19)
+  lag = lag.listw(ww, merged_coord$gini19) # Retardos
+  clag = dif - mean(lag) # Retardo - Media(Retardo)
+  p = P[,5] 
+  quadrant = vector(mode="numeric",length=nrow(P))+5
+  quadrant[dif>0 & clag>0 & p<= 0.05] = 1 # Alto-Alto
+  quadrant[dif<0 & clag<0 & p<= 0.05] = 2 # Bajo-Bajo
+  quadrant[dif<0 & clag>0 & p<= 0.05] = 3 # Bajo-Alto
+  quadrant[dif>0 & clag<0 & p<= 0.05] = 4 # Alto-Bajo
+  # Grafico 
+  brks = c(1,2,3,4,5)
+  colors = c("red", "blue", "light blue", "pink", "white")
+  plot(merged_coord$geometry, border ="lightgray", col=colors[findInterval(quadrant,brks,all.inside=FALSE)])
+  legend("bottomright", legend = c("Alto-Alto", "Bajo-Bajo", "Bajo-Alto", "Alto-Bajo", "Insignificante"),
+         fill = colors, bty="n", cex=0.7, y.intersp=1, x.intersp=1)
+  box()
+  title("LISA Cluster Map")
+}
+LISA(ww)
+
