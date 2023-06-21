@@ -1,0 +1,44 @@
+#filtrado de datos
+
+# cargo datasets ----
+library(readxl)
+gini <- read_excel("datasets/datos totales/Gini coefficient of equivalised disposable income.xlsx", sheet = "Sheet 1")
+proteccion <- read_excel("datasets/datos totales/Total expenditure on social protection per head of population.xlsx", sheet = "Sheet 1")
+precariedad <- read_excel("datasets/datos totales/Precarious employment by sex, age and NACE.xlsx", sheet = "Sheet 1")
+poblacion <- read_excel("datasets/datos totales/Population on 1 january.xlsx", sheet = "Sheet 1")
+educacion <- read_excel("datasets/datos totales/Population by educational attainment level, sex and age (%).xlsx", sheet = "Sheet 1")
+
+# me quedo con el año 2019 de cada dataset, pongo NA y as.numeric 
+library(dplyr)
+gini19 <- select(gini, "GEO (Labels)", "2019")
+proteccion19 <- select(proteccion, "GEO (Labels)", "2019")
+precariedad19 <- select(precariedad, "GEO (Labels)", "2019")
+poblacion19 <- select(poblacion, "GEO (Labels)", "2019")
+educacion19 <- select(educacion, "GEO (Labels)", "2019")
+
+gini19$"2019"[gini19$"2019" == ":"] <- NA
+gini19$"2019"<- as.numeric(gini19$"2019")
+proteccion19$"2019"[proteccion19$"2019" == ":"] <- NA
+proteccion19$"2019"<- as.numeric(proteccion19$"2019")
+precariedad19$"2019"[precariedad19$"2019" == ":"] <- NA
+precariedad19$"2019"<- as.numeric(precariedad19$"2019")
+poblacion19$"2019"[poblacion19$"2019" == ":"] <- NA
+poblacion19$"2019"<- as.numeric(poblacion19$"2019")
+educacion19$"2019"[educacion19$"2019" == ":"] <- NA
+educacion19$"2019"<- as.numeric(educacion19$"2019")
+
+gini19 <- gini19 %>% rename(gini19 = "2019")
+proteccion19 <- proteccion19 %>% rename(proteccion19 = "2019")
+precariedad19 <- precariedad19 %>% rename(precariedad19 = "2019")
+poblacion19 <- poblacion19 %>% rename(poblacion19 = "2019")
+educacion19 <- educacion19 %>% rename(educacion19 = "2019")
+
+datos <- merge(gini19, proteccion19, by = "GEO (Labels)", all=TRUE)
+datos <- merge(datos, precariedad19, by = "GEO (Labels)", all=TRUE)
+datos <- merge(datos, poblacion19, by = "GEO (Labels)", all=TRUE)
+datos <- merge(datos, educacion19, by = "GEO (Labels)", all=TRUE)
+
+datos <- datos[datos$"GEO (Labels)" != "Russia", ] #elimino Rusia
+
+library(openxlsx)
+write.xlsx(datos, file = "merged_data.xlsx")
