@@ -1,0 +1,80 @@
+library(readxl)
+merged_geodata <- read_excel("merged_geodata.xlsx")
+
+# Análisis descriptivo medidas de centralidad y dispersión ----
+print(summary(merged_geodata))
+sd(na.omit(merged_geodata$gini19))
+sd(na.omit(merged_geodata$proteccion19))
+sd(na.omit(merged_geodata$educacion19))
+sd(na.omit(merged_geodata$precariedad19))
+sd(na.omit(merged_geodata$poblacion19))
+
+# Histogramas y boxplots ----
+hist(merged_geodata$gini19,
+     probability=T,
+     main = "Coeficiente del Gini", 
+     ylab = "Densidad",
+     xlab = "Valor del coeficiente",
+     col ="mistyrose3")
+lines(density(gini19), col = "black", lwd = 2)
+boxplot(merged_geodata$gini19, col = "lightsteelblue")
+
+proteccion19 <- na.omit(merged_geodata$proteccion19)
+hist(merged_geodata$proteccion19,
+     probability=T,
+     main = "Gasto en Protección Social", 
+     ylab = "Densidad",
+     xlab = "Valor del gasto en euros",
+     col = "mistyrose3")
+lines(density(proteccion19), col = "black", lwd = 2)
+boxplot(merged_geodata$proteccion19, col = "lightsteelblue")
+
+educacion19 <- na.omit(merged_geodata$educacion19)
+hist(merged_geodata$educacion19,
+     probability=T,
+     main = "Alcance del Nivel Educativo", 
+     ylab = "Densidad",
+     xlab = "Valor porcentual población con nivel 5 a 8 de educación",
+     col = "mistyrose3")
+lines(density(educacion19), col = "black", lwd = 2)
+boxplot(merged_geodata$educacion19, col = "lightsteelblue")
+
+precariedad19 <- na.omit(merged_geodata$precariedad19)
+hist(merged_geodata$precariedad19,
+     probability=T,
+     main = "Precariedad Laboral", 
+     ylab = "Densidad",
+     xlab = "Valor porcentual trabajadores en condiciones precarias",
+     col = "mistyrose3")
+lines(density(precariedad19), col = "black", lwd = 2)
+boxplot(merged_geodata$precariedad19, col = "lightsteelblue")
+
+ibrary(dplyr)
+solo_valores <- subset(merged_geodata, select = -1) #quito columna geo(labels)
+solo_valores <- subset(solo_valores, select = -1) #quito columna geo
+correlacion <-round(cor(solo_valores),3) #redondeo a 3 decimales
+solo_valores <- solo_valores[complete.cases(solo_valores), ] #me quedo con filas completas sin NA
+solo_valores <- select(solo_valores, gini19, proteccion19, educacion19, precariedad19, poblacion19)
+colnames(solo_valores) <- c("Coeficiente Gini", "Protección social", "Nivel educación", "Precariedad Laboral", "Población nacional") #cambio nombre columnas dataframe
+
+# Matriz de correlación y diagrama bivariable Coeficiente de Gini y Gasto en Protección Social
+library(psych)
+solo_val <- solo_val[complete.cases(merged_data), ]
+corPlot(solo_val, 
+        scale = FALSE,
+        cex = 1.2, 
+        main = "Matriz de correlación entre variables")
+
+library(ggrepel)
+cor(solo_val$gini19, solo_val$proteccion19) 
+ggplot(solo_val, aes(x=proteccion19, y=gini19)) +
+  geom_point(color = 'blue', size=2) +
+  labs(title='Correlación Gini y gasto en protección social',
+       y="Coeficiente de Gini", 
+       x="Gasto en protección social",
+       caption="Fuente: Elaboración propia a través de datos del portal EUROSTAT") +
+  theme_classic() +
+  geom_text_repel(aes(label = solo_val$"GEO (Labels)"))+
+  theme(plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+        plot.caption = element_text(size = 12, hjust = 1),
+        plot.title.position = "panel")
