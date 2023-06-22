@@ -122,9 +122,6 @@ ggplot(mapamoran) +
        title = "Gráfico 7: Test de Moran local - Coeficiente del Gini") +
   scale_fill_viridis_c()+
   theme_classic()
-
-
-
 #Ajuste del modelo ----
 #para autocorrelación --> matriz del exploratorio
 shapiro.test(merged_coord$gini19) #para ver si sigue una distribución normal
