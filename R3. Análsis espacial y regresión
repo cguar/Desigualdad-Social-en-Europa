@@ -113,3 +113,6 @@ LISA <- function(x) {
 }
 LISA(ww)
 
+#Ajuste del modelo ----
+#para autocorrelación --> matriz del exploratorio
+shapiro.test(merged_coord$gini19) #para ver si sigue una distribución normal
