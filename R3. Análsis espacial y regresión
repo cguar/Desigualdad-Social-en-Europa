@@ -112,7 +112,41 @@ LISA <- function(x) {
   title("LISA Cluster Map")
 }
 LISA(ww)
+mapamoran <- merged_coord %>% 
+  mutate(lmoran = localmoran(merged_coord$gini19, listw = ww)[, 1],
+         lmoran_pval = localmoran(merged_coord$gini19, listw = ww)[, 5]
+  )
+ggplot(mapamoran) +
+  geom_sf(aes(fill = lmoran))+
+  labs(fill = "",
+       title = "Gráfico 7: Test de Moran local - Coeficiente del Gini") +
+  scale_fill_viridis_c()+
+  theme_classic()
+
+
 
 #Ajuste del modelo ----
 #para autocorrelación --> matriz del exploratorio
 shapiro.test(merged_coord$gini19) #para ver si sigue una distribución normal
+library(mgcv)
+df1 <- slice(merged_coord, -c(1,20))
+
+adj_list <- st_touches(df1, df1)
+names(adj_list) <- as.factor(df1$"GEO (Labels)")
+CAR_modelq <- gam(formula = gini19 ~ s(as.factor(df1$"GEO (Labels)"), 
+                        xt = list(nb=adj_list), 
+                        bs="mrf"), 
+                    data=df1)
+summary(CAR_modelq$gam)
+df1$fitted <- predict(CAR_modelq$gam)
+ggplot(df1, aes( x= gini19, y=fitted)) +
+  geom_point(size=2.5) + 
+  geom_smooth(method=gam, col="tomato3") + coord_equal() +
+  xlab("Coeficiente del Gini")+
+  ylab("Valores ajustados")+
+  theme_bw() #### grafico de la regresion linea
+(R2 <- cor(df1$gini19, df1$fitted)^2 ) 
+ggplot(df1, aes(fill=fitted)) + geom_sf(lwd=0.2) +
+  scale_fill_viridis_c(name='Valor\nAjustado',direction=-1)+
+  theme_classic() #### grafico de la regresion mapa
+
