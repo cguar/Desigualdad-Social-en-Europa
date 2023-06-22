@@ -1,4 +1,4 @@
-library(readxl)
+library(readxl) 
 merged_geodata <- read_excel("merged_geodata.xlsx")
 
 # Análisis descriptivo medidas de centralidad y dispersión ----
