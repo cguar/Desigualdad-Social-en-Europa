@@ -7,7 +7,7 @@ proteccion <- read_excel("datasets/datos totales/Total expenditure on social pro
 precariedad <- read_excel("datasets/datos totales/Precarious employment by sex, age and NACE.xlsx", sheet = "Sheet 1")
 poblacion <- read_excel("datasets/datos totales/Population on 1 january.xlsx", sheet = "Sheet 1")
 educacion <- read_excel("datasets/datos totales/Population by educational attainment level, sex and age (%).xlsx", sheet = "Sheet 1")
-
+ 
 # me quedo con el año 2019 de cada dataset, pongo NA y as.numeric 
 library(dplyr)
 gini19 <- select(gini, "GEO (Labels)", "2019")
